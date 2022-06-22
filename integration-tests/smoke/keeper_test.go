@@ -564,26 +564,34 @@ func getKeeperSuite(
 				It("takes down half of the keeper nodes and watches upkeeps get performed slower", func() {
 					// Record how much time it takes to have all the registered upkeeps perform 5 times each
 					const numberOfTimesUpkeepsShouldPerform int64 = 5
-					var completedUpkeepsFirstTime = 0
+
+					var upkeepsWithEnoughPerforms []int
+
 					var alreadyMarkedFirstTime = make([]bool, len(upkeepIDs))
 					for i := 0; i < len(alreadyMarkedFirstTime); i++ {
 						alreadyMarkedFirstTime[i] = false
 					}
 
 					firstStart := time.Now()
-					for completedUpkeepsFirstTime < len(upkeepIDs) {
+					for len(upkeepsWithEnoughPerforms) != len(upkeepIDs) {
 						for i := 0; i < len(upkeepIDs); i++ {
 							counter, err := consumers[i].Counter(context.Background())
 							Expect(err).ShouldNot(HaveOccurred(), "Failed to get counter for upkeepID"+strconv.Itoa(i))
 
 							if counter.Cmp(big.NewInt(numberOfTimesUpkeepsShouldPerform)) == 0 && !alreadyMarkedFirstTime[i] {
-								completedUpkeepsFirstTime++
+								upkeepsWithEnoughPerforms = append(upkeepsWithEnoughPerforms, i)
 								alreadyMarkedFirstTime[i] = true
 							}
 						}
 					}
 					firstElapsed := time.Since(firstStart)
 					fmt.Printf("First time it took %s", firstElapsed)
+
+					for i := 0; i < len(upkeepIDs); i++ {
+						counter, err := consumers[i].Counter(context.Background())
+						Expect(err).ShouldNot(HaveOccurred(), "Failed to get counter for upkeepID"+strconv.Itoa(i))
+						fmt.Println("UpkeepID= " + strconv.Itoa(i) + " and it has " + strconv.Itoa(int(counter.Int64())) + " performs")
+					}
 
 					// Now we need to take down half of the keeper nodes
 					nodesToTakeDown := chainlinkNodes[:len(chainlinkNodes)/2+1]
