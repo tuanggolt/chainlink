@@ -1,81 +1,38 @@
 package utils
 
 import (
-	"errors"
 	"fmt"
-	"regexp"
-	"unicode"
+	"strings"
 
+	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 )
 
 const PasswordComplexityRequirements = `
-Must be longer than 12 characters
-Must comprise at least 3 of:
-	lowercase characters
-	uppercase characters
-	numbers
-	symbols
+Must have a minimum length of 16 characters
 Must not comprise:
 	A user's API email
-	More than three identical consecutive characters
 `
 
-var (
-	lowercase = regexp.MustCompile("[a-z]")
-	uppercase = regexp.MustCompile("[A-Z]")
-	numbers   = regexp.MustCompile("[0-9]")
+const RequiredLen = 16
 
-	ErrPasswordMinLength     = errors.New("must be longer than 12 characters")
-	ErrPasswordMinLowercase  = errors.New("must contain at least 3 lowercase characters")
-	ErrPasswordMinUppercase  = errors.New("must contain at least 3 uppercase characters")
-	ErrPasswordMinNumbers    = errors.New("must contain at least 3 numbers")
-	ErrPasswordMinSymbols    = errors.New("must contain at least 3 symbols")
-	ErrPasswordRepeatedChars = errors.New("must not contain more than 3 identical consecutive characters")
+var (
+	ErrPasswordMinLength = errors.Errorf("must be longer than %d characters", RequiredLen)
 )
 
-func countSymbols(password string) (count int) {
-	for _, r := range password {
-		if unicode.IsPunct(r) || unicode.IsSymbol(r) {
-			count++
-		}
-	}
-	return
-}
-
-func VerifyPasswordComplexity(password string) (merr error) {
-	if len(password) <= 12 {
+func VerifyPasswordComplexity(password string, disallowedStrings ...string) (merr error) {
+	if len(password) < RequiredLen {
 		merr = multierr.Append(merr, ErrPasswordMinLength)
 	}
-	if len(lowercase.FindAllString(password, -1)) < 3 {
-		merr = multierr.Append(merr, ErrPasswordMinLowercase)
-	}
-	if len(uppercase.FindAllString(password, -1)) < 3 {
-		merr = multierr.Append(merr, ErrPasswordMinUppercase)
-	}
-	if len(numbers.FindAllString(password, -1)) < 3 {
-		merr = multierr.Append(merr, ErrPasswordMinNumbers)
-	}
-	if countSymbols(password) < 3 {
-		merr = multierr.Append(merr, ErrPasswordMinSymbols)
-	}
-	var c byte
-	var instances int
-	for i := 0; i < len(password); i++ {
-		if password[i] == c {
-			instances++
-		} else {
-			instances = 1
+
+	for _, s := range disallowedStrings {
+		if strings.Contains(password, s) {
+			merr = multierr.Append(merr, errors.Errorf("password may not contain: %s", s))
 		}
-		if instances > 3 {
-			merr = multierr.Append(merr, ErrPasswordRepeatedChars)
-			break
-		}
-		c = password[i]
 	}
 
 	if merr != nil {
-		merr = fmt.Errorf("password does not meet the requirements.\n%+v", merr)
+		merr = fmt.Errorf("password does not meet the requirements: %s", merr.Error())
 	}
 
 	return

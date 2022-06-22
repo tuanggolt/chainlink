@@ -14,17 +14,9 @@ func TestVerifyPasswordComplexity(t *testing.T) {
 		password string
 		errors   []error
 	}{
-		{"QWERTYuiop123!@#", []error{}},
-		{"QQQQWERTYuiop123!@#", []error{utils.ErrPasswordRepeatedChars}},
-		{"abcB123+!@", []error{utils.ErrPasswordMinUppercase}},
-		{"ABCd123+!@", []error{utils.ErrPasswordMinLowercase}},
-		{"ABCzxc1+!@", []error{utils.ErrPasswordMinNumbers}},
-		{"aB2+", []error{
-			utils.ErrPasswordMinLength,
-			utils.ErrPasswordMinUppercase,
-			utils.ErrPasswordMinLowercase,
-			utils.ErrPasswordMinNumbers,
-		}},
+		{"thispasswordislongenough", []error{}},
+		{"exactlyrightlen1", []error{}},
+		{"notlongenough", []error{utils.ErrPasswordMinLength}},
 	}
 
 	for _, test := range tests {

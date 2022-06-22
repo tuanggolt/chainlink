@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- After feedback from users, password complexity requirements have been simplified. There are now only two requirements for any kind of password used with Chainlink:
+1. Must be 16 characters or more
+2. User passwords must not contain the user's API email
+
 ### Changed
 
 - Chainlink will now log a warning if the postgres database password is missing or too insecure. Passwords should conform to the following rules:
